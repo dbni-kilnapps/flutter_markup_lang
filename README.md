@@ -15,7 +15,8 @@ To start using the `flutter_markup` package, add it to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_markup: ^1.0.0
+  flutter_markup:
+    path: /path/to/package
 ```
 Then, run `flutter pub get` to install the package.
 
