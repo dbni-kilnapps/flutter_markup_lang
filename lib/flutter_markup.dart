@@ -23,121 +23,82 @@ class FIML extends StatelessWidget {
   Widget build(BuildContext context) {
     return tree.buildWidgetTree(context);
   }
-
-  // Widget buildWidgetTree(BuildContext context) {
-  //   for (FIMLElement element in tree.elements) {
-  //     //top level elements
-  //     if (element.tag == 'Scaffold') {
-  //       //find the appbar and body
-  //       final appbar = tree.queryElement('AppBar');
-  //       final body = tree.queryElement('body');
-  //       final floatingActionButton = tree.queryElement('FloatingActionButton');
-
-  //       return Scaffold(
-  //         appBar: appbar.toWidget(context) as AppBar,
-  //         body: body.toWidget(context),
-  //         floatingActionButton: floatingActionButton.toWidget(context),
-  //       );
-  //     }
-  //   }
-  //   throw Exception("No elements found in the tree");
-  // }
 }
 
 /// Parses the FIML string and returns a list of FIMLElements
 class FIMLParser {
   final RegExp selfClosingTagPattern = RegExp(r'<(\w+)(\s+\w+="[^"]*")*\s*\/>');
   final RegExp fullTagPattern =
-      RegExp(r'(<\s*([a-zA-Z0-9]+)\s*([^>]*?)\s*>)([\s\S]*?)(<\/\s*\2\s*>)');
+      RegExp(r'<\s*([a-zA-Z0-9]+)\s*([^>]*?)\s*>([\s\S]*?)<\/\s*\1\s*>');
+  final RegExp combinedTagPattern = RegExp(
+      r'(<(\w+)(\s+\w+="[^"]*")*\s*\/>)|(<\s*([a-zA-Z0-9]+)\s*([^>]*?)\s*>([\s\S]*?)<\/\s*\5\s*>)');
   final RegExp attributesPattern =
       RegExp(r'([\w-]+)=(?:("[^"]*")|([^ ]+)|(\d+))');
 
-  List<FIMLElement> buildMarkupTree(String input) {
-    final matches = fullTagPattern.allMatches(input);
-    final selfClosingMatches = selfClosingTagPattern.allMatches(input);
-    if (matches.isEmpty && selfClosingMatches.isEmpty) {
-      throw Exception("Please add a tag to your input");
-    }
+  List<dynamic> buildMarkupTree(String input) {
+    List<dynamic> elements = [];
+    int lastIndex = 0;
 
-    List<FIMLElement> elements = [];
-    List<Range> fullTagRanges = [];
+    final matches = combinedTagPattern.allMatches(input);
 
-    // Process full tags
     for (var match in matches) {
-      final tagName = match.group(2)!;
-      final attributesRaw = match.group(3) ?? "";
-      final children = match.group(4) ?? "";
-
-      List<FIMLAttribute> attributes = [];
-
-      if (attributesRaw.isNotEmpty) {
-        final attribsSplit = attributesPattern.allMatches(attributesRaw);
-        for (var attribMatch in attribsSplit) {
-          final g = attribMatch.group(0)!.split("=");
-
-          final attribute = FIMLAttribute(
-              name: g[0],
-              value: int.tryParse(g[1]) ?? g[1].substring(1, g[1].length - 1));
-
-          attributes.add(attribute);
+      // Capture any plain text before this tag
+      if (match.start > lastIndex) {
+        final text = input.substring(lastIndex, match.start).trim();
+        if (text.isNotEmpty) {
+          elements.add(text); // Add plain text directly as String
         }
       }
 
-      dynamic childrenElements;
+      if (match.group(1) != null) {
+        // Self-closing tag
+        final tagName = match.group(2)!;
+        final attributesRaw = match.group(3) ?? "";
+        List<FIMLAttribute> attributes = _parseAttributes(attributesRaw);
 
-      // Check if content has nested tags
-      final nestedTagMatches = fullTagPattern.allMatches(children);
-      if (nestedTagMatches.isNotEmpty) {
-        List<FIMLElement> nestedElements = buildMarkupTree(children);
-        childrenElements =
-            nestedElements.length == 1 ? nestedElements.first : nestedElements;
-      } else if (children.isNotEmpty) {
-        childrenElements = children;
-      } else {
-        childrenElements = null;
+        elements.add(FIMLElement(tag: tagName, children: null, attributes: attributes));
+      } else if (match.group(4) != null) {
+        // Full tag with content
+        final tagName = match.group(5)!;
+        final attributesRaw = match.group(6) ?? "";
+        final children = match.group(7)?.trim() ?? "";
+
+        List<FIMLAttribute> attributes = _parseAttributes(attributesRaw);
+        List<dynamic> childrenElements = buildMarkupTree(children);
+
+        elements.add(FIMLElement(tag: tagName, children: childrenElements, attributes: attributes));
       }
 
-      elements.add(FIMLElement(
-          tag: tagName, children: childrenElements, attributes: attributes));
-
-      // Add the range of this full tag to the list
-      fullTagRanges.add(Range(match.start, match.end));
+      lastIndex = match.end;
     }
 
-    // Process self-closing tags
-    for (var match in selfClosingMatches) {
-      final tagName = match.group(1)!;
-      final attributesRaw = match.group(2) ?? "";
-
-      bool isWithinFullTag = fullTagRanges.any((range) =>
-          match.start >= range.start && match.end <= range.end);
-
-      if (isWithinFullTag) {
-        continue; // Skip this self-closing tag
+    // Capture remaining text after the last tag
+    if (lastIndex < input.length) {
+      final text = input.substring(lastIndex).trim();
+      if (text.isNotEmpty) {
+        elements.add(text); // Add plain text directly as String
       }
-
-      List<FIMLAttribute> attributes = [];
-
-      if (attributesRaw.isNotEmpty) {
-        final attribsSplit = attributesPattern.allMatches(attributesRaw);
-        for (var attribMatch in attribsSplit) {
-          final g = attribMatch.group(0)!.split("=");
-
-          final attribute = FIMLAttribute(
-              name: g[0],
-              value: int.tryParse(g[1]) ?? g[1].substring(1, g[1].length - 1));
-
-          attributes.add(attribute);
-        }
-      }
-
-      elements.add(
-          FIMLElement(tag: tagName, children: null, attributes: attributes));
     }
 
     return elements;
   }
+
+  List<FIMLAttribute> _parseAttributes(String attributesRaw) {
+    List<FIMLAttribute> attributes = [];
+
+    if (attributesRaw.isNotEmpty) {
+      final attribsSplit = attributesPattern.allMatches(attributesRaw);
+      for (var attribMatch in attribsSplit) {
+        final g = attribMatch.group(0)!.split("=");
+        final attribute = FIMLAttribute(name: g[0], value: int.tryParse(g[1]) ?? g[1].substring(1, g[1].length - 1));
+        attributes.add(attribute);
+      }
+    }
+    return attributes;
+  }
 }
+
+
 
 class Range {
   final int start;

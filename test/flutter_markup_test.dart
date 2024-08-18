@@ -122,4 +122,21 @@ void main() {
           ])
     ].toString(), fmlTest.toString());
   });
+  test('spans',(){
+    const fmlTextTest = """
+     <body>
+        this is the body
+        <p>This is a paragraph with <b>bold</b> text</p>
+        <h2>This is a <i>paragraph</i> with <span>spanned</span> text</h2>
+        <i>no more</i>
+        with trailing text
+      </body>
+      """;
+
+    final fmlTest = FIMLParser().buildMarkupTree(fmlTextTest);
+
+    print(fmlTest.toString());
+
+  }
+  );
 }

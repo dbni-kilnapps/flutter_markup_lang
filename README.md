@@ -1,4 +1,4 @@
-# flutter_markup (STILL WIP)
+# Flutter Integrated Markup Language (STILL WIP)
 
 A Flutter package for rendering markup into Flutter widgets.
 

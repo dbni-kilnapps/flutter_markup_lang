@@ -32,12 +32,15 @@ export 'package:flutter_markup/models.dart';
 /// </Scaffold>
 class FIMLElement {
   final String tag;
-  final dynamic children; //either plain text or a list of FIMLElements
+  final dynamic children; // either plain text or a list of FIMLElements
   final List<FIMLAttribute> attributes;
 
-  //constructor with named params, attributes are optional
-  FIMLElement(
-      {required this.tag, required this.children, this.attributes = const []});
+  // Constructor with named params, attributes are optional
+  FIMLElement({
+    required this.tag,
+    required this.children,
+    this.attributes = const [],
+  });
 
   @override
   String toString() {
@@ -50,83 +53,185 @@ class FIMLElement {
       orElse: () => FIMLAttribute(name: name, value: null),
     );
 
-    if(attrib.name == "main-axis-alignment"){
-      switch(attrib.value){
-        case "start":
-          return MainAxisAlignment.start;
-        case "end":
-          return MainAxisAlignment.end;
-        case "center":
-          return MainAxisAlignment.center;
+    var reservedKeywords = <String, dynamic>{
+      'main-axis-alignment': {
+        'start': MainAxisAlignment.start,
+        'end': MainAxisAlignment.end,
+        'center': MainAxisAlignment.center,
+        'space-between': MainAxisAlignment.spaceBetween,
+        'space-around': MainAxisAlignment.spaceAround,
+        'space-evenly': MainAxisAlignment.spaceEvenly,
+      },
+      'cross-axis-alignment': {
+        'start': CrossAxisAlignment.start,
+        'end': CrossAxisAlignment.end,
+        'center': CrossAxisAlignment.center,
+        'stretch': CrossAxisAlignment.stretch,
+        'baseline': CrossAxisAlignment.baseline,
+      },
+      'icon': {
+        'add': Icons.add,
+      },
+    };
+
+    for (var key in reservedKeywords.keys) {
+      if (key == attrib.name) {
+        return reservedKeywords[attrib.name][attrib.value];
       }
     }
 
-    if(attrib.name == "icon"){
-      switch(attrib.value){
-        case "add":
-          return Icon(Icons.add);
-        case "photo":
-          return Icon(Icons.add_a_photo);
-      
-      }
+    if (attrib.value == "key") {
+      return Key(attrib.value);
+    }
+
+    if (attrib.value == "on-pressed") {
+      return Function.apply(attrib.value, []);
     }
 
     return attrib[name];
   }
 
-  Widget toWidget(BuildContext context) {
+  Widget toWidget(BuildContext context, {String? parentName}) {
+    var _textStyles = {
+      'h1': Theme.of(context).textTheme.displayLarge,
+      'h2': Theme.of(context).textTheme.displayMedium,
+      'h3': Theme.of(context).textTheme.displaySmall,
+      'h4': Theme.of(context).textTheme.headlineLarge,
+      'h5': Theme.of(context).textTheme.headlineMedium,
+      'h6': Theme.of(context).textTheme.headlineSmall,
+      'p': Theme.of(context).textTheme.bodySmall,
+      'b': const TextStyle(fontWeight: FontWeight.bold),
+      'i': const TextStyle(fontStyle: FontStyle.italic),
+      'Text': null,
+    };
+
+    // Determine the current style based on the tag or the parent's tag name
+    TextStyle? currentStyle = _textStyles[tag] ?? _textStyles[parentName];
+
     switch (tag) {
+      case 'Scaffold':
+        return Scaffold(
+          appBar: _findChildByTag('AppBar')!.toWidget(context, parentName: tag)
+              as AppBar,
+          body: _findChildByTag('body')!.toWidget(context, parentName: tag),
+          floatingActionButton: _findChildByTag('FloatingActionButton')!
+              .toWidget(context, parentName: tag),
+        );
       case 'AppBar':
-        return AppBar(title: Text(tryGetAttribute('title')));
+        return AppBar(
+          title: Text(tryGetAttribute('title')),
+          backgroundColor: Theme.of(context).primaryColorLight,
+        );
       case 'body':
-        return _buildChildWidget(context);
+        return children is List
+            ? Column(children: _buildChildren(context, currentStyle))
+            : _buildChildWidget(context, currentStyle);
       case 'FloatingActionButton':
         return FloatingActionButton(
           onPressed: () {},
           tooltip: tryGetAttribute('tooltip'),
-          child: _buildChildWidget(context),
+          child: _buildChildWidget(context, currentStyle),
         );
       case 'Icon':
-        return tryGetAttribute('icon');
-      // Alignment widgets
+        return Icon(tryGetAttribute('icon'));
       case 'Center':
         return Center(
           key: tryGetAttribute('key'),
-          child: _buildChildWidget(context),
+          child: _buildChildWidget(context, currentStyle),
         );
-
-      // Collection widgets
       case 'Column':
         return Column(
-          mainAxisAlignment: tryGetAttribute('main-axis-alignment'),
+          mainAxisAlignment:
+              tryGetAttribute('main-axis-alignment') ?? MainAxisAlignment.start,
+          crossAxisAlignment: tryGetAttribute('cross-axis-alignment') ??
+              CrossAxisAlignment.center,
           children: children is List
-              ? (children as List<FIMLElement>).map<Widget>((e) => e.toWidget(context)).toList()
-              : [_buildChildWidget(context)],
+              ? _buildChildren(context, currentStyle)
+              : [_buildChildWidget(context, currentStyle)],
         );
-
-      // Text widgets
-      case 'Text':
-        return Text(children);
+      case 'Row':
+        return Row(
+          mainAxisAlignment:
+              tryGetAttribute('main-axis-alignment') ?? MainAxisAlignment.start,
+          crossAxisAlignment: tryGetAttribute('cross-axis-alignment') ??
+              CrossAxisAlignment.center,
+          children: children is List
+              ? _buildChildren(context, currentStyle)
+              : [_buildChildWidget(context, currentStyle)],
+        );
+      case 'h1':
+      case 'h2':
+      case 'h3':
+      case 'h4':
       case 'h5':
-        return Text(children, style: Theme.of(context).textTheme.headlineSmall);
+      case 'h6':
       case 'p':
-        return Text(children);
+      case 'b':
+      case 'i':
+      case 'span':
+      case 'Text':
+        if (children.length == 1) {
+          return Text(
+            children[0],
+            style: _textStyles[parentName]?.merge(_textStyles[tag]) ?? _textStyles[tag],
+          );
+        } else {
+          return Text.rich(
+            
+            TextSpan(
+              children: [
+                for (var child in children)
+                  if (child is String)
+                    TextSpan(text: " $child ", style: currentStyle)
+                  else if (child is FIMLElement)
+                    WidgetSpan(child: child.toWidget(context, parentName: tag))
+                
+                ]
+            ),
+            textAlign: TextAlign.center,
+
+
+          );
+          // return Row(
+          //   children: _buildChildren(context, currentStyle),
+          // );
+        }
     }
-    return Container(); //TODO: custom widget logic
+    return Container(); // Fallback for unsupported tags
   }
 
+  List<Widget> _buildChildren(BuildContext context, TextStyle? currentStyle) {
+    return (children as List).map<Widget>((e) {
+      if (e is FIMLElement) {
+        return e.toWidget(context,
+            parentName: tag); // Passing the tag name as parentName
+      } else if (e is String) {
+        return Text(e, style: currentStyle);
+      }
+      return Container();
+    }).toList();
+  }
 
-  Widget _buildChildWidget(BuildContext context) {
+  Widget _buildChildWidget(BuildContext context, TextStyle? currentStyle) {
     if (children is FIMLElement) {
-      return (children as FIMLElement).toWidget(context);
+      return (children as FIMLElement).toWidget(context,
+          parentName: tag); // Passing the tag name as parentName
     } else if (children is String) {
-      return Text(children);
+      return Text(children, style: currentStyle);
     } else {
-      return Container(); // or handle other cases if necessary
+      return Container(); // Handle other cases if necessary
     }
   }
 
-  
+  /// Find a child element by its tag name (used for widgets which require a specific child)
+  /// Throws an exception if the tag is not found
+  FIMLElement? _findChildByTag(String tag) {
+    if (children is List) {
+      return (children as List).firstWhere((element) => element.tag == tag,
+          orElse: () => throw Exception("Required tag $tag not found"));
+    }
+    throw Exception("Something went wrong");
+  }
 }
 
 class FIMLAttribute {
@@ -147,7 +252,7 @@ class FIMLAttribute {
 }
 
 class FIMLTree {
-  final List<FIMLElement> elements;
+  final List<dynamic> elements;
 
   //constructor
   FIMLTree({required this.elements});
@@ -158,35 +263,28 @@ class FIMLTree {
   }
 
   Widget buildWidgetTree(BuildContext context) {
-    for(FIMLElement element in elements){
-      //top level elements
-      if(element.tag == 'Scaffold'){
-        //find the appbar and body
-        final appbar = queryElement('AppBar');
-        final body = queryElement('body');
-        final floatingActionButton = queryElement('FloatingActionButton');
-
-        return Scaffold(
-          appBar: appbar.toWidget(context) as AppBar,
-          body: body.toWidget(context),
-          floatingActionButton: floatingActionButton.toWidget(context),
-        );
-        
-      }
+    if (elements.isEmpty) {
+      throw Exception("No elements found in the tree");
     }
-    throw Exception("No elements found in the tree");
+    // var widg = <Widget>[];
+    // for(FIMLElement element in elements){
+    //   widg.add(element.toWidget(context));
+    // }
+    return elements[0].toWidget(context);
   }
 
   FIMLElement queryElement(String tag) {
-    return _queryElementRecursive(elements, tag) ?? FIMLElement(tag: "Container", children: "No element found");
+    return _queryElementRecursive(elements, tag) ??
+        FIMLElement(tag: "Container", children: "No element found");
   }
-  FIMLElement? _queryElementRecursive(List<FIMLElement> elements, String tag) {
+
+  FIMLElement? _queryElementRecursive(List<dynamic> elements, String tag) {
     for (var element in elements) {
       if (element.tag == tag) {
         return element;
       }
       if (element.children is List<FIMLElement>) {
-        var result = _queryElementRecursive(element.children as List<FIMLElement>, tag);
+        var result = _queryElementRecursive(element.children as List, tag);
         if (result != null) {
           return result;
         }

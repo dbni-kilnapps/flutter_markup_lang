@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_markup/flutter_markup.dart';
 
@@ -32,33 +31,31 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return FIML(
-    """
-    <Scaffold> // meant to be autodetected
+    return FIML("""
+    <Scaffold>
       <AppBar title="${widget.title}" />
       <body>
-            <Center>
-              <Column main-axis-alignment="center">
-                <Text>You have pushed the button this many times:</Text>
-                <Text>$_counter</Text> //This is an inline comment
-                <Icon icon="add" />
-                <Icon icon="add" />
-              </Column>
-            </Center>
-          </body>
-      <FloatingActionButton on-pressed="_incrementCounter" tooltip="Increment">
-        <Icon icon="add" /> //TODO: Fix this
+        <Column main-axis-alignment="center">
+          <Text>You have pushed the button this many times:</Text>
+          <Text>$_counter</Text>
+        </Column>
+        <p>howdy <b>everyone</b> how <i>are you</i> today?</p>
+        <Row main-axis-alignment="space-between" cross-axis-alignment="center">
+          <h1>howdy</h1>
+          <h2>partner</h2>
+        </Row>
+      </body>
+      <FloatingActionButton>
+        <Icon icon="add" />
       </FloatingActionButton>
     </Scaffold>
+    <Text>You have pushed the button this many times:</Text>
 
-    """,
-    style:
-    """
+    """, style: """
     AppBar {
       backgroundColor: Theme.of(context).colorScheme.inversePrimary,
     }
-    """
-    );
+    """);
   }
 }
 

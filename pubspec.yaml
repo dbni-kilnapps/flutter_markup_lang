@@ -8,6 +8,7 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
+  dart_eval: ^0.7.9
   flutter:
     sdk: flutter
   video_player: ^2.9.1
