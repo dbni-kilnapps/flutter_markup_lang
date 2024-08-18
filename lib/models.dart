@@ -134,13 +134,13 @@ class FIMLElement {
         );
       case 'Icon':
         return Icon(tryGetAttribute('icon'));
-      case 'Center':
-        return Center(
-          key: tryGetAttribute('key'),
-          child: _buildChildWidget(context, currentStyle),
-        );
+      // case 'Center':
+      //   return Center(
+      //     key: tryGetAttribute('key'),
+      //     child: _buildChildWidget(context, currentStyle),
+      //   );
       case 'Column':
-        return Column(
+        return _checkAttributes(Column(
           mainAxisAlignment:
               tryGetAttribute('main-axis-alignment') ?? MainAxisAlignment.start,
           crossAxisAlignment: tryGetAttribute('cross-axis-alignment') ??
@@ -148,7 +148,7 @@ class FIMLElement {
           children: children is List
               ? _buildChildren(context, currentStyle)
               : [_buildChildWidget(context, currentStyle)],
-        );
+        ));
       case 'Row':
         return Row(
           mainAxisAlignment:
@@ -231,6 +231,15 @@ class FIMLElement {
           orElse: () => throw Exception("Required tag $tag not found"));
     }
     throw Exception("Something went wrong");
+  }
+  
+  ///modifies the given widget based on the attributes
+  Widget _checkAttributes(Widget widget) {
+    //check if attributes contains named attribute "centered"
+    if (tryGetAttribute('centered') == true) {
+      return Center(child: widget);
+    }
+    return widget;
   }
 }
 

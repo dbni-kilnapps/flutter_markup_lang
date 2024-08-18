@@ -35,7 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
     <Scaffold>
       <AppBar title="${widget.title}" />
       <body>
-        <Column main-axis-alignment="center">
+        <Column main-axis-alignment="center" centered>
           <Text>You have pushed the button this many times:</Text>
           <Text>$_counter</Text>
         </Column>

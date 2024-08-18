@@ -20,7 +20,7 @@ void main() {
 
   test('test a tag with attributes', () {
     final fmlTextTest = """
-      <Text size=12 foo='bar' color="blue" on-click={print("HI")}>Hello, world!</Text>
+      <Text money size size=12 foo='bar' color="blue" on-click={print("HI") expanded centered right lef tup down>Hello, world!</Text>
       """;
 
     final fmlTest = FIMLParser().buildMarkupTree(fmlTextTest);

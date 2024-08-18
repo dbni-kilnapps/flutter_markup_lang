@@ -90,9 +90,27 @@ class FIMLParser {
       final attribsSplit = attributesPattern.allMatches(attributesRaw);
       for (var attribMatch in attribsSplit) {
         final g = attribMatch.group(0)!.split("=");
+        //print g2 groups
+
         final attribute = FIMLAttribute(name: g[0], value: int.tryParse(g[1]) ?? g[1].substring(1, g[1].length - 1));
         attributes.add(attribute);
       }
+      var g2 = [];
+      for(var c in attributesRaw.split(attributesPattern)){
+        var y = c.split(" ");
+        if(c != ""){
+          g2.addAll(y);
+        }
+
+      }
+      g2.removeWhere((element) => element == "");
+      print("hi");
+      if(g2.isNotEmpty){
+        attributes.addAll(g2.map(
+          (e) => FIMLAttribute(name: e, value: true)
+        ));
+      }
+      
     }
     return attributes;
   }
