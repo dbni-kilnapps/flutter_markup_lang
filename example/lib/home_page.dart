@@ -38,6 +38,9 @@ class _MyHomePageState extends State<MyHomePage> {
         <Column main-axis-alignment="center" centered>
           <Text>You have pushed the button this many times:</Text>
           <Text>$_counter</Text>
+          <img src="https://picsum.photos/200/300" alt="Joseph" />
+          <Icon icon="add" />
+          <a href="https://flutter.dev">Flutter</a>
         </Column>
         <p>howdy <b>everyone</b> how <i>are you</i> today?</p>
         <Row main-axis-alignment="space-between" cross-axis-alignment="center">
@@ -45,8 +48,8 @@ class _MyHomePageState extends State<MyHomePage> {
           <h2>partner</h2>
         </Row>
       </body>
-      <FloatingActionButton>
-        <Icon icon="add" />
+      <FloatingActionButton tooltip="Click to increment counter">
+        <Text>Hello</Text>
       </FloatingActionButton>
     </Scaffold>
     <Text>You have pushed the button this many times:</Text>

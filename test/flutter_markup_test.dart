@@ -1,4 +1,4 @@
-import 'package:flutter_markup/models.dart';
+import 'package:flutter_markup/fiml_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_markup/flutter_markup.dart';
@@ -13,8 +13,7 @@ void main() {
 
     print(fmlTest.toString());
 
-    expect(
-        [FIMLElement(tag: "Text", children: "Hello, world!").toString()],
+    expect([FIMLElement(tag: "Text", children: "Hello, world!").toString()],
         fmlTest.toString());
   });
 
@@ -25,19 +24,14 @@ void main() {
 
     final fmlTest = FIMLParser().buildMarkupTree(fmlTextTest);
     print(fmlTest[0].attributes[0]['size']);
-    expect(
-        [
-          FIMLElement(
-              tag: "Text",
-              children: "Hello, world!",
-              attributes: [
-                FIMLAttribute(name: "size", value: 12),
-                FIMLAttribute(name: "foo", value: "bar"),
-                FIMLAttribute(name: "color", value: "blue"),
-                FIMLAttribute(name: "on-click", value: "print(\"HI\")")
-              ]).toString()
-        ],
-        fmlTest.toString());
+    expect([
+      FIMLElement(tag: "Text", children: "Hello, world!", attributes: [
+        FIMLAttribute(name: "size", value: 12),
+        FIMLAttribute(name: "foo", value: "bar"),
+        FIMLAttribute(name: "color", value: "blue"),
+        FIMLAttribute(name: "on-click", value: "print(\"HI\")")
+      ]).toString()
+    ], fmlTest.toString());
   });
 
   test('test nested attributes', () {
@@ -52,23 +46,16 @@ void main() {
     final fmlTest = FIMLParser().buildMarkupTree(fmlTextTest);
 
     expect(
-        FIMLElement(
-                tag: "body",
-                children: [
-                  FIMLElement(
-                      tag: "Column",
-                      children: [
-                        FIMLElement(
-                            tag: "button",
-                            children: "Submit",
-                            attributes: [
-                              FIMLAttribute(name: "type", value: "submit"),
-                              FIMLAttribute(name: "on-click", value: "print(\"HI\")")
-                            ])
-                      ])
-                ])
-            .toString(),
-        fmlTest.toString());});
+        FIMLElement(tag: "body", children: [
+          FIMLElement(tag: "Column", children: [
+            FIMLElement(tag: "button", children: "Submit", attributes: [
+              FIMLAttribute(name: "type", value: "submit"),
+              FIMLAttribute(name: "on-click", value: "print(\"HI\")")
+            ])
+          ])
+        ]).toString(),
+        fmlTest.toString());
+  });
 
   test('test multiple tags', () {
     final fmlTextTest = """
@@ -86,43 +73,31 @@ void main() {
 
     print(fmlTest.toString());
 
-
-    expect([
-      FIMLElement(tag: "Text", children: "Hello, world!"),
-      FIMLElement(
-          tag: "Text",
-          children: "Hello, world!",
-          attributes: [
+    expect(
+        [
+          FIMLElement(tag: "Text", children: "Hello, world!"),
+          FIMLElement(tag: "Text", children: "Hello, world!", attributes: [
             FIMLAttribute(name: "size", value: 12),
             FIMLAttribute(name: "foo", value: "bar"),
             FIMLAttribute(name: "color", value: "blue"),
             FIMLAttribute(name: "on-click", value: "print(\"HI\")")
           ]),
-      FIMLElement(
-          tag: "body",
-          children: [
-            FIMLElement(
-                tag: "Column",
-                children: [
-                  FIMLElement(
-                      tag: "button",
-                      children: "Submit",
-                      attributes: [
-                        FIMLAttribute(name: "type", value: "submit"),
-                        FIMLAttribute(name: "on-click", value: "print(\"HI\")")
-                      ]),
-                  FIMLElement(
-                      tag: "button",
-                      children: "Cancel",
-                      attributes: [
-                        FIMLAttribute(name: "type", value: "submit"),
-                        FIMLAttribute(name: "on-click", value: "print(\"CANCEL\")")
-                      ])
-                ])
+          FIMLElement(tag: "body", children: [
+            FIMLElement(tag: "Column", children: [
+              FIMLElement(tag: "button", children: "Submit", attributes: [
+                FIMLAttribute(name: "type", value: "submit"),
+                FIMLAttribute(name: "on-click", value: "print(\"HI\")")
+              ]),
+              FIMLElement(tag: "button", children: "Cancel", attributes: [
+                FIMLAttribute(name: "type", value: "submit"),
+                FIMLAttribute(name: "on-click", value: "print(\"CANCEL\")")
+              ])
+            ])
           ])
-    ].toString(), fmlTest.toString());
+        ].toString(),
+        fmlTest.toString());
   });
-  test('spans',(){
+  test('spans', () {
     const fmlTextTest = """
      <body>
         this is the body
@@ -136,7 +111,42 @@ void main() {
     final fmlTest = FIMLParser().buildMarkupTree(fmlTextTest);
 
     print(fmlTest.toString());
+  });
+  test('make sure comments aren\'t parsed', () {
+    const fmlTextTest = """
+      <body>
+        // this is a comment
+        <p>This is a paragraph with <b>bold</b> text</p>
+        <h2>This is a <i>paragraph</i> with <span>spanned</span> text</h2>
+        <i>no more</i>
+        /*
+        this is a block comment
+        */
+        with trailing text
+      </body>
+      """;
 
-  }
-  );
+    final fmlTest = FIMLParser().buildMarkupTree(fmlTextTest);
+
+    print(fmlTest.toString());
+
+    expect(
+        FIMLElement(tag: "body", children: [
+          FIMLElement(tag: "p", children: [
+            "This is a paragraph with ",
+            FIMLElement(tag: "b", children: "bold"),
+            " text"
+          ]),
+          FIMLElement(tag: "h2", children: [
+            "This is a ",
+            FIMLElement(tag: "i", children: "paragraph"),
+            " with ",
+            FIMLElement(tag: "span", children: "spanned"),
+            " text"
+          ]),
+          FIMLElement(tag: "i", children: "no more"),
+          "with trailing text"
+        ]).toString(),
+        fmlTest.toString());
+  });
 }

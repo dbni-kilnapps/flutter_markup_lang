@@ -1,0 +1,60 @@
+///Concept for a file type that is a mix of HTML and Dart code
+///export keyword is used to export the class
+///import keyword is used to import a class, package, or file
+///(make sure it's included in pubspec)
+///script tags are used to define variables and functions
+///templating is anything else that is not a script or style tag (similar to svelete)
+export HomePage extends StatefulWidget;
+import 'package:path/to/flutter/widget.dart';
+import 'style/style.fcss';
+
+<script>
+  // example of a variable
+  int _counter = 0;
+
+  //example of a variable that is a widget
+  var _dialog = {
+    <dialog type="alert" title="AlertDialogTitle">
+      <Text>Alert Dialog</Text>
+      <Text>Counter: $_counter</Text>
+      <button on-click={Navigator.pop}>Increment</button>
+    </dialog>
+    };
+
+  // example of a function
+  void _incrementCounter() {
+    setState(() {
+      _counter++;
+    });
+  }
+
+</script>
+
+<Scaffold>
+  //scaffolds are used to define the layout of the page
+  //since the paramaters of a scaffold are widgets,
+  //they can be directly used as tags
+  <AppBar title="My App" /> //appbar is a widget
+  <body> //body is used to define the body of the scaffold
+    <ListView type="builder" restoration-id="homeList" item-count=3>
+      <ListTile>
+        <Text slot="title">Counter</Text>
+        <Text slot="subtitle">$_counter</Text>
+        <CustomWidget slot="trailing" />
+      </ListTile>
+    </ListView>
+    for (int i = 0; i < 3; i++) {
+      <Text>text $i</Text>
+    }
+    <button on-click={_incrementCounter}>Increment</button>
+  </body>
+  <FloatingActionButton on-pressed={_incrementCounter} tooltip="Increment">
+    <Icon icon="add" /> //TODO: Fix this
+  </FloatingActionButton>
+</Scaffold>
+
+<style lang="fcss">
+  // style can be css, fcss, or scss
+  // fcss is a custom style language that is similar to css
+
+</style>

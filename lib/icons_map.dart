@@ -1,0 +1,32 @@
+import 'package:flutter/material.dart';
+
+final Map<String, IconData> iconsMap = {
+  'add': Icons.add,
+  'remove': Icons.remove,
+  'delete': Icons.delete,
+  'done': Icons.done,
+  'close': Icons.close,
+  'menu': Icons.menu,
+  'more_vert': Icons.more_vert,
+  'abc': Icons.abc,
+  'ac_unit': Icons.ac_unit,
+  'access_alarm': Icons.access_alarm,
+  'access_alarms': Icons.access_alarms,
+  'access_time': Icons.access_time,
+  'accessibility': Icons.accessibility,
+  'accessible': Icons.accessible,
+  'account_balance': Icons.account_balance,
+  'account_box': Icons.account_box,
+  'account_circle': Icons.account_circle,
+  'ad_units': Icons.ad_units,
+  'adb': Icons.adb,
+  'add_a_photo': Icons.add_a_photo,
+  'add_alarm': Icons.add_alarm,
+  'add_alert': Icons.add_alert,
+  'add_box': Icons.add_box,
+  'add_call': Icons.add_call,
+  'add_chart': Icons.add_chart,
+  'add_circle': Icons.add_circle,
+  'add_comment': Icons.add_comment,
+  // Add remaining icons following this format.
+};

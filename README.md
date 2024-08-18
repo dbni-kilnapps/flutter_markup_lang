@@ -2,6 +2,9 @@
 
 A Flutter package for rendering markup into Flutter widgets.
 
+**FML (Flutter Markup Language)** - an HTML based language that can be used to create widgets
+**FIML (Flutter Integrated Markup Language)** - an HTML based language that integrates Dart that can be used to create working apps
+
 ## Features
 
 - Convert markup strings into Flutter widgets.

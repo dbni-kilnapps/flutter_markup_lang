@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-export 'package:flutter_markup/models.dart';
+import 'package:flutter_markup/icons_map.dart';
+import 'package:url_launcher/url_launcher.dart';
+export 'package:flutter_markup/fiml_models.dart';
 
 /// A basic FIML tag
 /// Tags can be any Flutter widget or an HTML tag
@@ -34,12 +36,15 @@ class FIMLElement {
   final String tag;
   final dynamic children; // either plain text or a list of FIMLElements
   final List<FIMLAttribute> attributes;
+  final List<FIMLStyle>? styles;
 
   // Constructor with named params, attributes are optional
   FIMLElement({
     required this.tag,
     required this.children,
     this.attributes = const [],
+    //optional named param
+    this.styles = const [],
   });
 
   @override
@@ -69,9 +74,29 @@ class FIMLElement {
         'stretch': CrossAxisAlignment.stretch,
         'baseline': CrossAxisAlignment.baseline,
       },
-      'icon': {
-        'add': Icons.add,
+      'box-fit': {
+        'fill': BoxFit.fill,
+        'contain': BoxFit.contain,
+        'cover': BoxFit.cover,
+        'fit-width': BoxFit.fitWidth,
+        'fit-height': BoxFit.fitHeight,
+        'none': BoxFit.none,
+        'scale-down': BoxFit.scaleDown,
       },
+      'icon': iconsMap,
+      'color': {
+        // 'primary': Theme.of(context).colorScheme.primary,
+        // 'primary-variant': Theme.of(context).colorScheme.primaryVariant,
+        'red': Colors.red,
+        'blue': Colors.blue,
+        'green': Colors.green,
+        'yellow': Colors.yellow,
+        'orange': Colors.orange,
+        'purple': Colors.purple,
+        'black': Colors.black,
+        'white': Colors.white,
+        'transparent': Colors.transparent,
+      }
     };
 
     for (var key in reservedKeywords.keys) {
@@ -91,6 +116,30 @@ class FIMLElement {
     return attrib[name];
   }
 
+  dynamic tryGetStyle(String name){
+    final style = styles!.firstWhere(
+      (style) => style.name == name,
+      orElse: () => FIMLStyle(name: name, value: null),
+    );
+
+    var colors = {
+      'color':{
+        'red': Colors.red,
+        'blue': Colors.blue,
+        'green': Colors.green,
+        'yellow': Colors.yellow,
+        'orange': Colors.orange,
+        'purple': Colors.purple,
+        'black': Colors.black,
+        'white': Colors.white,
+        'transparent': Colors.transparent,
+      }
+    };
+
+    return style[name];
+  }
+
+
   Widget toWidget(BuildContext context, {String? parentName}) {
     var _textStyles = {
       'h1': Theme.of(context).textTheme.displayLarge,
@@ -109,23 +158,19 @@ class FIMLElement {
     TextStyle? currentStyle = _textStyles[tag] ?? _textStyles[parentName];
 
     switch (tag) {
+      //flutter Based
       case 'Scaffold':
         return Scaffold(
-          appBar: _findChildByTag('AppBar')!.toWidget(context, parentName: tag)
+          appBar: _findChildByTag('AppBar', required: true)!.toWidget(context, parentName: tag)
               as AppBar,
-          body: _findChildByTag('body')!.toWidget(context, parentName: tag),
-          floatingActionButton: _findChildByTag('FloatingActionButton')!
-              .toWidget(context, parentName: tag),
+          body: _findChildByTag('body', required: true)!.toWidget(context, parentName: tag),
+          floatingActionButton: _findChildByTag('FloatingActionButton')?.toWidget(context, parentName: tag)
         );
       case 'AppBar':
         return AppBar(
           title: Text(tryGetAttribute('title')),
           backgroundColor: Theme.of(context).primaryColorLight,
         );
-      case 'body':
-        return children is List
-            ? Column(children: _buildChildren(context, currentStyle))
-            : _buildChildWidget(context, currentStyle);
       case 'FloatingActionButton':
         return FloatingActionButton(
           onPressed: () {},
@@ -134,13 +179,10 @@ class FIMLElement {
         );
       case 'Icon':
         return Icon(tryGetAttribute('icon'));
-      // case 'Center':
-      //   return Center(
-      //     key: tryGetAttribute('key'),
-      //     child: _buildChildWidget(context, currentStyle),
-      //   );
+      case 'FlutterLogo':
+        return FlutterLogo();
       case 'Column':
-        return _checkAttributes(Column(
+        return _checkPositionalAttributes(Column(
           mainAxisAlignment:
               tryGetAttribute('main-axis-alignment') ?? MainAxisAlignment.start,
           crossAxisAlignment: tryGetAttribute('cross-axis-alignment') ??
@@ -159,6 +201,72 @@ class FIMLElement {
               ? _buildChildren(context, currentStyle)
               : [_buildChildWidget(context, currentStyle)],
         );
+      case 'ListView':
+        if (tryGetAttribute('type') == 'builder') {
+          return Expanded(
+            child: ListView.builder(
+              itemCount: tryGetAttribute('item-count'),
+              itemBuilder: (context, index) {
+                //build all children
+                return Column(children: 
+                  _buildChildren(context, currentStyle)
+                );
+              },
+            ),
+          );
+        }
+        return ListView(
+          children: _buildChildren(context, currentStyle),
+        );
+      case 'ListTile':
+        return ListTile(
+          onTap: () {
+            tryGetAttribute('on-tap');
+          },
+          leading: _findChildBySlot('leading')?.toWidget(context, parentName: tag),
+          title: _findChildBySlot('title', required: true)!.toWidget(context, parentName: tag),
+          subtitle: _findChildBySlot('subtitle')?.toWidget(context, parentName: tag),
+          trailing: _findChildBySlot('trailing')?.toWidget(context, parentName: tag),
+        );
+
+      //HTML based
+      case 'body':
+        return children is List
+            ? Column(children: _buildChildren(context, currentStyle))
+            : _buildChildWidget(context, currentStyle);
+
+      case 'img':
+        //TODO: Add support for other image attributes
+        return Image.network(
+          tryGetAttribute('src'),
+          fit: tryGetAttribute('box-fit') ?? BoxFit.cover,
+        );
+
+      case 'a':
+        return GestureDetector(
+          onTap: () async {
+            final Uri url = Uri.parse(tryGetAttribute('href'));
+            if (!await launchUrl(url)) {
+              throw Exception('Could not launch $url');
+            }
+          },
+          child: Text(
+            children[0],
+            style: TextStyle(color: Colors.blue),
+          ),
+        );
+      case 'div':
+        return Container(
+          width: tryGetAttribute('width').toDouble() ?? double.infinity,
+          height: tryGetAttribute('height').toDouble() ?? double.infinity,
+          decoration: BoxDecoration(
+            color: tryGetAttribute('color') ?? Colors.transparent,
+          ),
+          child: children is List
+              ? Column(children: _buildChildren(context, currentStyle))
+              : _buildChildWidget(context, currentStyle),
+        );
+      //TODO: implement text span adapter
       case 'h1':
       case 'h2':
       case 'h3':
@@ -171,26 +279,25 @@ class FIMLElement {
       case 'span':
       case 'Text':
         if (children.length == 1) {
-          return Text(
-            children[0],
-            style: _textStyles[parentName]?.merge(_textStyles[tag]) ?? _textStyles[tag],
+          return _checkPositionalAttributes(
+            Text(
+              children[0],
+              style: _textStyles[parentName]?.merge(_textStyles[tag]) ??
+                  _textStyles[tag],
+            ),
           );
         } else {
-          return Text.rich(
-            
-            TextSpan(
-              children: [
+          return _checkPositionalAttributes(
+            Text.rich(
+              TextSpan(children: [
                 for (var child in children)
                   if (child is String)
                     TextSpan(text: " $child ", style: currentStyle)
                   else if (child is FIMLElement)
                     WidgetSpan(child: child.toWidget(context, parentName: tag))
-                
-                ]
+              ]),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-
-
           );
           // return Row(
           //   children: _buildChildren(context, currentStyle),
@@ -200,7 +307,7 @@ class FIMLElement {
     return Container(); // Fallback for unsupported tags
   }
 
-  List<Widget> _buildChildren(BuildContext context, TextStyle? currentStyle) {
+  List<Widget> _buildChildren(BuildContext context, TextStyle? currentStyle, {List<dynamic> parameters = const []}) {
     return (children as List).map<Widget>((e) {
       if (e is FIMLElement) {
         return e.toWidget(context,
@@ -225,21 +332,45 @@ class FIMLElement {
 
   /// Find a child element by its tag name (used for widgets which require a specific child)
   /// Throws an exception if the tag is not found
-  FIMLElement? _findChildByTag(String tag) {
+  FIMLElement? _findChildByTag(String tag, {bool required = false}) {
     if (children is List) {
       return (children as List).firstWhere((element) => element.tag == tag,
-          orElse: () => throw Exception("Required tag $tag not found"));
+          orElse: () => required ? throw Exception("Missing required widget $tag") : null);
     }
     throw Exception("Something went wrong");
   }
-  
+
   ///modifies the given widget based on the attributes
-  Widget _checkAttributes(Widget widget) {
+  Widget _checkPositionalAttributes(Widget widget) {
     //check if attributes contains named attribute "centered"
     if (tryGetAttribute('centered') == true) {
       return Center(child: widget);
     }
     return widget;
+  }
+  
+  _findChildBySlot(String slot, {bool required = false}) {
+    if (children is List) {
+      return (children as List).firstWhere((element) => element.tryGetAttribute('slot') == slot,
+          orElse: () => null);
+    }
+    throw Exception("Something went wrong");
+  }
+}
+
+class FIMLStyle{
+  final String name;
+  final dynamic value;
+
+  FIMLStyle({required this.name, required this.value});
+
+  dynamic operator [](String key) {
+    return value;
+  }
+
+  @override
+  String toString() {
+    return "FIMLStyle(name: $name, value: $value)";
   }
 }
 

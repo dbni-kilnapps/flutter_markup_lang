@@ -2,12 +2,12 @@ library flutter_markup;
 
 import 'package:flutter/material.dart';
 
-import 'package:flutter_markup/models.dart';
+import 'package:flutter_markup/fiml_models.dart';
 
 /// takes an FIML string and returns a corresponding widget tree
 class FIML extends StatelessWidget {
   final String input;
-  final String style; // style in FQSS (Flutter Query Style Sheet)
+  final String style; // style in FCSS (FIML Cascading Style Sheets) format
   late FIMLTree tree;
 
   //constructor, style is optional named param
@@ -27,15 +27,21 @@ class FIML extends StatelessWidget {
 
 /// Parses the FIML string and returns a list of FIMLElements
 class FIMLParser {
-  final RegExp selfClosingTagPattern = RegExp(r'<(\w+)(\s+\w+="[^"]*")*\s*\/>');
+  final RegExp selfClosingTagPattern = RegExp(r'<(\w+)([^>]*)\/>');
   final RegExp fullTagPattern =
       RegExp(r'<\s*([a-zA-Z0-9]+)\s*([^>]*?)\s*>([\s\S]*?)<\/\s*\1\s*>');
-  final RegExp combinedTagPattern = RegExp(
-      r'(<(\w+)(\s+\w+="[^"]*")*\s*\/>)|(<\s*([a-zA-Z0-9]+)\s*([^>]*?)\s*>([\s\S]*?)<\/\s*\5\s*>)');
+    final RegExp combinedTagPattern = RegExp(
+    r'(<(\w+)([^>]*)\/>)|(<\s*([a-zA-Z0-9]+)\s*([^>]*?)\s*>([\s\S]*?)<\/\s*\5\s*>)'
+  );
   final RegExp attributesPattern =
       RegExp(r'([\w-]+)=(?:("[^"]*")|([^ ]+)|(\d+))');
 
-  List<dynamic> buildMarkupTree(String input) {
+      //use js style comments
+  final RegExp commentPattern = RegExp(r'(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/)');
+
+
+  List<dynamic> buildMarkupTree(String fimlInput) {
+    var input = fimlInput.replaceAll(commentPattern, '');
     List<dynamic> elements = [];
     int lastIndex = 0;
 
